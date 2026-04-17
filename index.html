@@ -5,124 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kávégép Vezérlő</title>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #121212; color: white; margin: 0; padding: 10px; }
-        .card { background: #1e1e1e; padding: 15px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; display: block; margin: auto; max-width: 400px; }
-        h2 { color: #f39c12; font-size: 28px; margin-bottom: 10px; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; }
+        .card { background: #111; padding: 15px; border-radius: 10px; display: block; margin: auto; max-width: 450px; border: 2px solid #333; }
         
-        button { cursor: pointer; border: none; border-radius: 15px; font-weight: bold; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
+        /* Gomb rács elrendezés a kép alapján */
+        .button-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
         
-        .btn-connect { background: #27ae60; color: white; padding: 25px; width: 100%; font-size: 22px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); }
-        .btn-connect:active { transform: scale(0.95); background: #1e8449; }
+        button { cursor: pointer; border: 3px solid #ccc; border-radius: 5px; font-weight: bold; transition: 0.2s; color: yellow; text-shadow: 1px 1px 2px black; font-size: 16px; min-height: 80px; display: flex; align-items: center; justify-content: center; padding: 5px; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
 
-        .button-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; padding: 10px; }
-        .btn-brew { background: #e67e22; color: white; height: 90px; font-size: 35px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .btn-brew:active { transform: scale(0.9); background: #d35400; }
-        
-        .btn-admin { background: #c0392b; grid-column: span 2; height: 80px; font-size: 24px; margin-top: 10px; }
+        /* Színek a beküldött fotó alapján */
+        .btn-blue { background: #0055ff; }    /* Forró víz */
+        .btn-green { background: #00aa00; }   /* Őrölt kávé */
+        .btn-red { background: #ff0000; }     /* Cappuccino */
+        .btn-orange { background: #cc6666; }  /* Hosszú kávé */
+        .btn-brightred { background: #ee0000; } /* Közepes kávé */
+        .btn-maroon { background: #660000; }  /* Presszó kávé */
+        .btn-pink { background: #ff00ff; grid-column: span 3; height: 60px; color: yellow; } /* Menü */
 
-        .admin-section { margin-top: 30px; padding: 20px; background: #252525; border-radius: 20px; border: 1px solid #444; }
-        .admin-title { color: #8e44ad; font-weight: bold; margin-bottom: 15px; display: block; font-size: 18px; }
-        .input-group { display: flex; justify-content: space-around; margin-bottom: 15px; gap: 10px; }
-        
-        .input-wrapper { display: flex; flex-direction: column; width: 45%; }
+        .btn-connect { background: #27ae60; color: white; width: 100%; height: 60px; font-size: 20px; margin-bottom: 10px; border: none; }
+
+        /* Kredit rész */
+        .admin-section { margin-top: 20px; padding: 15px; background: #222; border: 1px solid #444; border-radius: 10px; }
+        .input-group { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+        .input-wrapper { display: flex; flex-direction: column; width: 48%; }
         label { font-size: 12px; color: #aaa; margin-bottom: 5px; text-align: left; }
-        input { background: #333; border: 2px solid #555; color: white; padding: 15px; border-radius: 12px; font-size: 20px; text-align: center; width: 100%; box-sizing: border-box; }
+        input { background: #333; border: 1px solid #777; color: #00ff00; padding: 12px; border-radius: 5px; font-size: 22px; text-align: center; font-weight: bold; width: 100%; box-sizing: border-box; }
         
-        .btn-save { background: #8e44ad; color: white; width: 100%; padding: 20px; font-size: 20px; margin-top: 10px; }
-        .btn-refresh { background: #3498db; color: white; padding: 20px; width: 100%; font-size: 18px; margin-top: 20px; }
-        #status { font-size: 16px; margin-bottom: 15px; color: #888; }
+        .btn-save { background: #8e44ad; color: white; width: 100%; padding: 15px; font-size: 18px; border: none; }
+        #status { font-size: 14px; color: #888; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>☕ KAVEGEP_BLE</h2>
     <div id="status">Állapot: Nincs kapcsolódva</div>
-    
-    <button class="btn-connect" id="connBtn" onclick="connect()">CSATLAKOZÁS</button>
+    <button class="btn-connect" id="csatBtn" onclick="kapcsolodas()">CSATLAKOZÁS</button>
 
-    <div id="controls" style="display:none;">
+    <div id="vezerlok" style="display:none;">
         <div class="button-grid">
-            <button class="btn-brew" onclick="send('b1')">1</button>
-            <button class="btn-brew" onclick="send('b2')">2</button>
-            <button class="btn-brew" onclick="send('b3')">3</button>
-            <button class="btn-brew" onclick="send('b4')">4</button>
-            <button class="btn-brew" onclick="send('b5')">5</button>
-            <button class="btn-brew" onclick="send('b6')">6</button>
-            <button class="btn-admin" onclick="send('b7')">7 (ADMIN GOMB)</button>
+            <button class="btn-blue" onclick="kuldes('b1')">Forró víz</button>
+            <button class="btn-green" onclick="kuldes('b2')">Őrölt kávé<br>^</button>
+            <button class="btn-red" onclick="kuldes('b3')">Cappuccino<br>(enter)</button>
+            <button class="btn-orange" onclick="kuldes('b4')">hosszú kávé</button>
+            <button class="btn-brightred" onclick="kuldes('b5')">v<br>Közepes kávé</button>
+            <button class="btn-maroon" onclick="kuldes('b6')">(esc)<br>presszó kávé</button>
+            <button class="btn-pink" onclick="kuldes('b7')">menü</button>
         </div>
         
         <div class="admin-section">
-            <span class="admin-title">Kredit Kezelő</span>
             <div class="input-group">
                 <div class="input-wrapper">
                     <label>Sorszám (1-50)</label>
-                    <input type="number" id="slot" placeholder="0">
+                    <input type="number" id="sorszamInput" placeholder="0" oninput="kreditLekeres()">
                 </div>
                 <div class="input-wrapper">
-                    <label>Kredit (Ft)</label>
-                    <input type="number" id="val" placeholder="0">
+                    <label>Jelenlegi Kredit (Ft)</label>
+                    <input type="number" id="kreditInput" placeholder="0">
                 </div>
             </div>
-            <button class="btn-save" onclick="updateCredit()">KREDIT MENTÉSE</button>
+            <p style="font-size: 12px; color: #888;">Írd át a kreditet a módosításhoz:</p>
+            <button class="btn-save" onclick="kreditMentese()">KREDIT FRISSÍTÉSE</button>
         </div>
-
-        <button class="btn-refresh" onclick="send('refresh')">ADATOK FRISSÍTÉSE</button>
     </div>
 </div>
 
 <script>
-    let char;
-    const S_UUID = "12345678-1234-1234-1234-1234567890ab";
-    const C_UUID = "12345678-1234-1234-1234-1234567890ac";
+    let karakterisztika;
+    const SZERVIZ_UUID = "12345678-1234-1234-1234-1234567890ab";
+    const CHAR_UUID = "12345678-1234-1234-1234-1234567890ac";
 
-    async function connect() {
-        const st = document.getElementById('status');
+    async function kapcsolodas() {
         try {
-            st.innerText = "Keresés...";
-            const device = await navigator.bluetooth.requestDevice({
+            const eszkoz = await navigator.bluetooth.requestDevice({
                 filters: [{ name: 'KAVEGEP_BLE' }],
-                optionalServices: [S_UUID]
+                optionalServices: [SZERVIZ_UUID]
             });
-            const server = await device.gatt.connect();
-            const service = await server.getPrimaryService(S_UUID);
-            char = await service.getCharacteristic(C_UUID);
+            const szerver = await eszkoz.gatt.connect();
+            const szerviz = await szerver.getPrimaryService(SZERVIZ_UUID);
+            karakterisztika = await szerviz.getCharacteristic(CHAR_UUID);
             
-            st.innerText = "✅ KAPCSOLÓDVA";
-            st.style.color = "#2ecc71";
-            document.getElementById('controls').style.display = 'block';
-            document.getElementById('connBtn').style.display = 'none';
-        } catch (e) { 
-            st.innerText = "Hiba: " + e;
+            // Értesítések bekapcsolása a visszaküldött adatokhoz
+            await karakterisztika.startNotifications();
+            karakterisztika.addEventListener('characteristicvaluechanged', adatErkezett);
+
+            document.getElementById('status').innerText = "✅ KAPCSOLÓDVA";
+            document.getElementById('vezerlok').style.display = 'block';
+            document.getElementById('csatBtn').style.display = 'none';
+        } catch (hiba) { alert("Hiba: " + hiba); }
+    }
+
+    // Amikor az ESP32 adatot küld vissza
+    void function adatErkezett(event) {
+        let adat = new TextDecoder().decode(event.target.value);
+        if(!isNaN(adat)) { // Ha szám érkezik, az a kredit
+            document.getElementById('kreditInput').value = adat;
         }
     }
 
-    async function send(cmd) {
-        if(!char) return;
+    async function kuldes(parancs) {
+        if(!karakterisztika) return;
         try {
-            await char.writeValue(new TextEncoder().encode(cmd));
-        } catch (e) { console.log(e); }
+            await karakterisztika.writeValue(new TextEncoder().encode(parancs));
+        } catch (hiba) { console.log(hiba); }
     }
 
-    function updateCredit() {
-        const slotInput = document.getElementById('slot');
-        const valInput = document.getElementById('val');
-        
-        const slot = slotInput.value;
-        const val = valInput.value;
-        
-        if(slot && val) {
-            send(`k${slot}:${val}`);
-            alert("Sorszám: " + slot + " -> " + val + " Ft elküldve!");
-            
-            // Itt ürítjük ki a mezőket:
-            slotInput.value = "";
-            valInput.value = "";
-        } else {
-            alert("Töltsd ki mindkét mezőt!");
+    // Automatikusan lekéri a kreditet, ha beírod a sorszámot
+    function kreditLekeres() {
+        const sorszam = document.getElementById('sorszamInput').value;
+        if(sorszam >= 1 && sorszam <= 50) {
+            kuldes(`get:${sorszam}`); // Új parancs az ESP-nek
+        }
+    }
+
+    function kreditMentese() {
+        const sorszam = document.getElementById('sorszamInput').value;
+        const kredit = document.getElementById('kreditInput').value;
+        if(sorszam && kredit) {
+            kuldes(`k${sorszam}:${kredit}`);
+            alert("Sorszám " + sorszam + " frissítve " + kredit + " Ft-ra!");
         }
     }
 </script>
-
 </body>
 </html>
