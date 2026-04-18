@@ -5,47 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kávégép Vezérlő</title>
     <style>
-        body { background-color: #000; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
-        .card { background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 20px; }
+        body { background-color: #1a1a1a; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
         
-        /* Input mezők stílusa */
-        input { width: 100%; padding: 15px; margin: 5px 0; border-radius: 5px; border: 1px solid #444; background: #222; color: white; font-size: 18px; box-sizing: border-box; }
+        /* Csatlakozás gomb */
+        #csatBtn { background: #444; color: white; width: 100%; padding: 20px; font-size: 18px; border: none; border-radius: 10px; margin-bottom: 20px; }
         
-        /* Gombok elrendezése */
-        .btn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
-        
-        button { 
-            cursor: pointer; border: 3px solid #fff; border-radius: 5px; 
-            font-weight: bold; font-size: 16px; min-height: 80px; 
-            display: flex; align-items: center; justify-content: center; 
-            color: yellow; text-shadow: 1px 1px 2px black;
+        /* Gomb rács (3 oszlop) */
+        .gomb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+        .gomb-grid button { 
+            background: #2c3e50; color: #f1c40f; border: 2px solid #34495e; 
+            padding: 15px 5px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px;
         }
         
-        .btn-coffee { background: #0055ff; } /* Kék gombok */
-        .btn-admin { background: red; color: white; } /* Admin gomb */
-        .btn-save { background: #00aa00; color: white; width: 100%; padding: 15px; font-size: 18px; border: none; margin-top: 10px; }
-        .btn-conn { background: #444; color: white; width: 100%; padding: 15px; border: none; margin-bottom: 20px; }
+        /* Kredit blokk */
+        .kredit-card { background: #333; padding: 15px; border-radius: 10px; }
+        input { width: 100%; padding: 12px; margin: 5px 0; border-radius: 5px; border: none; box-sizing: border-box; font-size: 16px; }
+        .mentes-btn { background: #27ae60; color: white; width: 100%; padding: 15px; border: none; border-radius: 5px; font-size: 18px; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <button id="csatBtn" class="btn-conn" onclick="csatlakozas()">BLUETOOTH KAPCSOLAT</button>
-    <div id="status" style="color: #0f0; margin-bottom: 10px;"></div>
+    <button id="csatBtn" onclick="csatlakozas()">BLUETOOTH KAPCSOLAT</button>
 
-    <div class="card" id="vezerlok" style="display:none;">
-        <input type="number" id="slotInput" placeholder="Sorszám (Slot)">
-        <input type="number" id="kreditInput" placeholder="Kredit">
-        <button class="btn-save" onclick="kreditMentese()">MENTÉS</button>
-    </div>
+    <div id="vezerloFelulet" style="display:none;">
+        <div class="gomb-grid">
+            <button onclick="kuldes('b1')">Presszó</button>
+            <button onclick="kuldes('b2')">Közepes kávé</button>
+            <button onclick="kuldes('b3')">Hosszú kávé</button>
+            <button onclick="kuldes('b4')">Cappuccino</button>
+            <button onclick="kuldes('b5')">Enter</button>
+            <button onclick="kuldes('b6')">Őrölt kávé</button>
+            <button onclick="kuldes('b7')">Forró víz</button>
+            <button onclick="kuldes('b8')">Menü</button>
+        </div>
 
-    <div class="btn-grid" id="gombok" style="display:none;">
-        <button class="btn-coffee" onclick="kuldes('b1')">KÁVÉ 1</button>
-        <button class="btn-coffee" onclick="kuldes('b2')">KÁVÉ 2</button>
-        <button class="btn-coffee" onclick="kuldes('b3')">KÁVÉ 3</button>
-        <button class="btn-coffee" onclick="kuldes('b4')">KÁVÉ 4</button>
-        <button class="btn-coffee" onclick="kuldes('b5')">KÁVÉ 5</button>
-        <button class="btn-coffee" onclick="kuldes('b6')">KÁVÉ 6</button>
-        <button class="btn-admin" onclick="kuldes('b7')">ADMIN</button>
+        <div class="kredit-card">
+            <input type="number" id="slotInput" placeholder="Slot (Sorszám)">
+            <input type="number" id="kreditInput" placeholder="Kredit">
+            <button class="mentes-btn" onclick="mentesAdatok()">ADATOK MENTÉSE</button>
+        </div>
     </div>
 
     <script>
@@ -63,30 +61,29 @@
                 const service = await server.getPrimaryService(SERVICE_UUID);
                 bleChar = await service.getCharacteristic(RX_UUID);
                 
-                document.getElementById('status').innerText = "✅ CSATLAKOZVA";
-                document.getElementById('vezerlok').style.display = 'block';
-                document.getElementById('gombok').style.display = 'grid';
-                document.getElementById('csatBtn').style.display = 'none';
-            } catch (e) { alert("Hiba: " + e); }
+                document.getElementById('csatBtn').innerText = "✅ CSATLAKOZVA";
+                document.getElementById('csatBtn').style.background = "#27ae60";
+                document.getElementById('vezerloFelulet').style.display = 'block';
+            } catch (e) { alert("Hiba a csatlakozásnál: " + e); }
         }
 
         async function kuldes(cmd) {
             if (bleChar) await bleChar.writeValue(new TextEncoder().encode(cmd));
         }
 
-        async function kreditMentese() {
+        async function mentesAdatok() {
             const s = document.getElementById('slotInput').value;
             const k = document.getElementById('kreditInput').value;
 
             if (s && k) {
-                // Parancs küldése (kSorszám:Kredit)
+                // Parancs küldése (pl: k5:10)
                 await kuldes(`k${s}:${k}`);
                 
-                // MEZŐK TÖRLÉSE:
+                // MEZŐK TÖRLÉSE (ez a fontos lépés):
                 document.getElementById('slotInput').value = '';
                 document.getElementById('kreditInput').value = '';
             } else {
-                alert("Töltsd ki a mezőket!");
+                alert("Kérlek, töltsd ki mindkét mezőt!");
             }
         }
     </script>
