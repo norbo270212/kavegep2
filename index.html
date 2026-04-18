@@ -2,37 +2,44 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kávégép Vezérlő</title>
     <style>
-        body { background: #000; color: #fff; font-family: sans-serif; text-align: center; padding: 20px; }
+        body { background-color: #000; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
         .gomb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-        button { padding: 15px; font-weight: bold; cursor: pointer; border-radius: 5px; border: none; min-height: 60px; }
-        .admin-section { background: #222; padding: 20px; border-radius: 10px; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; color: #000; }
-        /* 7. gomb a teljes szélességet viszi */
-        .full-width { grid-column: span 3; background: #ff00ff; }
+        button { cursor: pointer; border: 3px solid #ccc; border-radius: 5px; font-weight: bold; font-size: 14px; min-height: 80px; display: flex; align-items: center; justify-content: center; }
+        /* Gomb színek a kép alapján */ 
+
+        .btn-blue { background: #067bc9; }
+        .btn-yellov { background: #c99506; }
+        .btn-green { background: #00aa00; }
+        .btn-red { background: #bd5506; }
+        .btn-orange { background: #cc6666; }
+        .btn-maroon { background:#963c05; }
+        .btn-pink { background: #ff00ff; grid-column: span 3; }
+        .admin-section { background: #222; padding: 15px; border-radius: 10px; margin-top: 10px; }
+        input { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; box-sizing: border-box; font-size: 18px; }
+        .btn-save { background: #8e44ad; color: white; width: 100%; padding: 15px; border: none; font-size: 18px; border-radius: 5px; margin-top: 5px; }
     </style>
 </head>
 <body>
-    <button id="csatBtn" style="background:#007bff; color:white; width:100%; height:50px; margin-bottom:20px;" onclick="kapcsolodas()">BLUETOOTH CSATLAKOZÁS</button>
+    <button id="csatBtn" onclick="kapcsolodas()" style="width:100%; height:50px; margin-bottom:20px;">BLUETOOTH KAPCSOLAT</button>
     
     <div id="vezerlok" style="display:none;">
         <div class="gomb-grid">
-            <button onclick="kuldes('b1')" style="background:#963c05;">Presszó</button>
-            <button onclick="kuldes('b2')" style="background:#bd5506;">Közepes</button>
-            <button onclick="kuldes('b3')" style="background:#cc6666;">Hosszú</button>
-            <button onclick="kuldes('b4')" style="background:#c99506;">Cappu</button>
-            <button onclick="kuldes('b5')" style="background:#00aa00;">Őrölt</button>
-            <button onclick="kuldes('b6')" style="background:#067bc9;">Víz</button>
-            <button onclick="kuldes('b7')" class="full-width">MENÜ / 7. GOMB</button>
+            <button class="btn-blue" onclick="kuldes('b6')">Forró víz</button>
+            <button class="btn-green" onclick="kuldes('b5')">Őrölt kávé<br>^</button>
+            <button class="btn-yellov" onclick="kuldes('b4')">Cappuccino<br>(enter)</button>
+            <button class="btn-orange" onclick="kuldes('b3')">hosszú kávé</button>
+            <button class="btn-red" onclick="kuldes('b2')">v<br>Közepes kávé</button>
+            <button class="btn-maroon" onclick="kuldes('b1')">(esc)<br>presszó kávé</button>
+            <button class="btn-pink" onclick="kuldes('b7')">menü</button>
         </div>
 
         <div class="admin-section">
-            <input type="number" id="slot" placeholder="Slot (pl. 1)">
-            <input type="text" id="kredit_kijelzo" placeholder="Aktuális kredit" readonly style="background:#ddd;">
-            <button onclick="lekerdezes()" style="background:#28a745; width:100%; color:white; padding:10px; border:none; border-radius:5px;">LEKÉRDEZÉS</button>
-            <input type="number" id="ujKredit" placeholder="Új összeg">
-            <button onclick="mentes()" style="background:#6f42c1; width:100%; color:white; padding:10px; border:none; border-radius:5px; margin-top:10px;">MENTÉS</button>
+            <input type="number" id="sorszamInput" placeholder="Sorszám (Slot)">
+            <input type="number" id="kreditInput" placeholder="Kredit">
+            <button class="btn-save" onclick="kreditMentese()">ADATOK MENTÉSE</button>
         </div>
     </div>
 
@@ -50,31 +57,22 @@
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(S_UUID);
                 char = await service.getCharacteristic(C_RX);
-                
-                await char.startNotifications();
-                char.addEventListener('characteristicvaluechanged', (event) => {
-                    const val = new TextDecoder().decode(event.target.value);
-                    if (val.startsWith("CREDIT:")) {
-                        document.getElementById('kredit_kijelzo').value = val.split(":")[1];
-                    }
-                });
-
                 document.getElementById('csatBtn').style.display = 'none';
                 document.getElementById('vezerlok').style.display = 'block';
             } catch (e) { alert("Hiba: " + e); }
         }
 
         async function kuldes(cmd) { if(char) await char.writeValue(new TextEncoder().encode(cmd)); }
-        
-        async function lekerdezes() {
-            const s = document.getElementById('slot').value;
-            if(s) await kuldes('g' + s);
-        }
 
-        async function mentes() {
-            const s = document.getElementById('slot').value;
-            const k = document.getElementById('ujKredit').value;
-            if(s && k) await kuldes('k' + s + ':' + k);
+        async function kreditMentese() {
+            const s = document.getElementById('sorszamInput');
+            const k = document.getElementById('kreditInput');
+            if (s.value && k.value) {
+                await kuldes(`k${s.value}:${k.value}`);
+                // Mezők törlése:
+                s.value = '';
+                k.value = '';
+            } else { alert("Töltsd ki mindkét mezőt!"); }
         }
     </script>
 </body>
