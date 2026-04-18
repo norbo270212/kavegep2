@@ -8,8 +8,6 @@
         body { background-color: #000; color: white; font-family: sans-serif; text-align: center; margin: 0; padding: 10px; }
         .gomb-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
         button { cursor: pointer; border: 3px solid #ccc; border-radius: 5px; font-weight: bold; font-size: 14px; min-height: 80px; display: flex; align-items: center; justify-content: center; }
-        /* Gomb színek a kép alapján */ 
-
         .btn-blue { background: #067bc9; }
         .btn-yellov { background: #c99506; }
         .btn-green { background: #00aa00; }
@@ -28,17 +26,20 @@
     <div id="vezerlok" style="display:none;">
         <div class="gomb-grid">
             <button class="btn-blue" onclick="kuldes('b6')">Forró víz</button>
-            <button class="btn-green" onclick="kuldes('b5')">Őrölt kávé<br>^</button>
-            <button class="btn-yellov" onclick="kuldes('b4')">Cappuccino<br>(enter)</button>
-            <button class="btn-orange" onclick="kuldes('b3')">hosszú kávé</button>
-            <button class="btn-red" onclick="kuldes('b2')">v<br>Közepes kávé</button>
-            <button class="btn-maroon" onclick="kuldes('b1')">(esc)<br>presszó kávé</button>
+            <button class="btn-green" onclick="kuldes('b5')">Őrölt kávé</button>
+            <button class="btn-yellov" onclick="kuldes('b4')">Cappuccino</button>
+            <button class="btn-orange" onclick="kuldes('b3')">Hosszú kávé</button>
+            <button class="btn-red" onclick="kuldes('b2')">Közepes kávé</button>
+            <button class="btn-maroon" onclick="kuldes('b1')">Presszó kávé</button>
             <button class="btn-pink" onclick="kuldes('b7')">menü</button>
         </div>
 
         <div class="admin-section">
             <input type="number" id="sorszamInput" placeholder="Sorszám (Slot)">
-            <input type="number" id="kreditInput" placeholder="Kredit">
+            <input type="text" id="kreditMegjelenito" placeholder="Aktuális kredit" readonly style="background:#444; color:#fff;">
+            <button class="btn-save" style="background:#27ae60;" onclick="lekerdezes()">KREDIT LEKÉRDEZÉSE</button>
+            
+            <input type="number" id="ujKreditInput" placeholder="Új kredit érték">
             <button class="btn-save" onclick="kreditMentese()">ADATOK MENTÉSE</button>
         </div>
     </div>
@@ -57,6 +58,16 @@
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(S_UUID);
                 char = await service.getCharacteristic(C_RX);
+                
+                // --- FIGYELŐ BEÁLLÍTÁSA (hogy lássad a kreditet) ---
+                await char.startNotifications();
+                char.addEventListener('characteristicvaluechanged', (event) => {
+                    const value = new TextDecoder().decode(event.target.value);
+                    if (value.startsWith("CREDIT:")) {
+                        document.getElementById('kreditMegjelenito').value = value.split(":")[1];
+                    }
+                });
+
                 document.getElementById('csatBtn').style.display = 'none';
                 document.getElementById('vezerlok').style.display = 'block';
             } catch (e) { alert("Hiba: " + e); }
@@ -64,14 +75,18 @@
 
         async function kuldes(cmd) { if(char) await char.writeValue(new TextEncoder().encode(cmd)); }
 
+        // Lekérdezés gomb
+        async function lekerdezes() {
+            const s = document.getElementById('sorszamInput').value;
+            if (s) { await kuldes(`g${s}`); } else { alert("Add meg a slot sorszámát!"); }
+        }
+
+        // Mentés gomb
         async function kreditMentese() {
-            const s = document.getElementById('sorszamInput');
-            const k = document.getElementById('kreditInput');
-            if (s.value && k.value) {
-                await kuldes(`k${s.value}:${k.value}`);
-                // Mezők törlése:
-                s.value = '';
-                k.value = '';
+            const s = document.getElementById('sorszamInput').value;
+            const k = document.getElementById('ujKreditInput').value;
+            if (s && k) {
+                await kuldes(`k${s}:${k}`);
             } else { alert("Töltsd ki mindkét mezőt!"); }
         }
     </script>
