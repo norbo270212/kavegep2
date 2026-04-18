@@ -1,54 +1,89 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kávégép Vezérlő</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; text-align: center; padding: 20px; }
-        button { width: 80%; padding: 20px; margin: 10px; font-size: 18px; border-radius: 10px; border: none; background: #007bff; color: white; }
-        #csatlakozas { background: #28a745; }
+        body { font-family: sans-serif; text-align: center; background: #000; color: white; margin: 0; padding: 10px; }
+        .card { background: #111; padding: 15px; border-radius: 10px; margin: 10px auto; max-width: 450px; border: 2px solid #333; }
+        .button-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
+        button { cursor: pointer; border: 2px solid #555; border-radius: 8px; font-weight: bold; color: #fff; font-size: 16px; min-height: 70px; display: flex; align-items: center; justify-content: center; padding: 5px; }
+        input { width: 90%; padding: 12px; margin: 5px 0; border-radius: 5px; border: none; font-size: 16px; box-sizing: border-box; }
+        .btn-blue { background: #0055ff; }    
+        .btn-green { background: #00aa00; }   
+        .btn-red { background: #cc0000; }     
+        #status { margin: 10px; font-weight: bold; color: #0f0; }
     </style>
 </head>
 <body>
-    <h1>Kávégép Vezérlő</h1>
-    <button id="csatlakozas">Bluetooth Csatlakozás</button>
-    <div id="vezerlok" style="display:none;">
-        <button onclick="kuld('b1')">Kávé 1</button>
-        <button onclick="kuld('b2')">Kávé 2</button>
-        <button onclick="kuld('b3')">Kávé 3</button>
+
+    <div class="card">
+        <h2>Kávégép Vezérlő</h2>
+        <button id="csatBtn" onclick="csatlakozas()" style="width: 100%; background: #444;">Bluetooth Csatlakozás</button>
+        <div id="status">Várakozás...</div>
+    </div>
+
+    <div class="card" id="vezerlok" style="display:none;">
+        <input type="number" id="sorszamInput" placeholder="Sorszám (pl: 5)">
+        <input type="number" id="kreditInput" placeholder="Kredit (pl: 10)">
+        <button onclick="kreditMentese()" class="btn-green" style="width: 100%; margin-top: 5px;">Mentés és Ürítés</button>
+
+        <div class="button-grid">
+            <button onclick="kuldes('b1')" class="btn-blue">1</button>
+            <button onclick="kuldes('b2')" class="btn-blue">2</button>
+            <button onclick="kuldes('b3')" class="btn-blue">3</button>
+            <button onclick="kuldes('b4')" class="btn-blue">4</button>
+            <button onclick="kuldes('b5')" class="btn-blue">5</button>
+            <button onclick="kuldes('b6')" class="btn-blue">6</button>
+            <button onclick="kuldes('b7')" class="btn-red">7 (Admin)</button>
+        </div>
     </div>
 
     <script>
         const SERVICE_UUID = '12345678-1234-1234-1234-1234567890ab';
         const RX_UUID = '12345678-1234-1234-1234-1234567890ac';
-        
-        let bleDevice = null;
-        let bleCharacteristic = null;
+        let bleChar = null;
 
-        document.getElementById('csatlakozas').onclick = async () => {
+        async function csatlakozas() {
             try {
-                bleDevice = await navigator.bluetooth.requestDevice({
+                const device = await navigator.bluetooth.requestDevice({
                     filters: [{ name: 'KaveGep_BLE' }],
                     optionalServices: [SERVICE_UUID]
                 });
-                const server = await bleDevice.gatt.connect();
+                const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(SERVICE_UUID);
-                bleCharacteristic = await service.getCharacteristic(RX_UUID);
+                bleChar = await service.getCharacteristic(RX_UUID);
                 
-                document.getElementById('csatlakozas').innerText = "✅ Csatlakoztatva";
+                document.getElementById('status').innerText = "✅ Csatlakoztatva";
                 document.getElementById('vezerlok').style.display = 'block';
-            } catch (err) {
-                alert("Hiba: " + err);
+                document.getElementById('csatBtn').style.display = 'none';
+            } catch (e) {
+                alert("Hiba: " + e);
             }
-        };
+        }
 
-        async function kuld(parancs) {
-            if (bleCharacteristic) {
-                let encoder = new TextEncoder();
-                await bleCharacteristic.writeValue(encoder.encode(parancs));
+        async function kuldes(cmd) {
+            if (bleChar) {
+                await bleChar.writeValue(new TextEncoder().encode(cmd));
+            }
+        }
+
+        async function kreditMentese() {
+            const s = document.getElementById('sorszamInput').value;
+            const k = document.getElementById('kreditInput').value;
+
+            if (s !== '' && k !== '') {
+                // Parancs küldése (pl: k5:10)
+                await kuldes(`k${s}:${k}`);
+                
+                // Mezők ürítése
+                document.getElementById('sorszamInput').value = '';
+                document.getElementById('kreditInput').value = '';
+                
+                alert("Adat elküldve!");
             } else {
-                alert("Nincs csatlakozva!");
+                alert("Töltsd ki mindkét mezőt!");
             }
         }
     </script>
