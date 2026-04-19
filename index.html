@@ -44,12 +44,11 @@
     </div>
 
     <script>
-        let writeChar; // Ide küldünk (RX)
-        let notifyChar; // Innét olvasunk (TX)
-        
+        let writeChar;
+        let notifyChar;
         const S_UUID = "12345678-1234-1234-1234-1234567890ab";
-        const C_RX   = "12345678-1234-1234-1234-1234567890ac"; // Írás
-        const C_TX   = "12345678-1234-1234-1234-1234567890ad"; // Értesítés (Notification)
+        const C_RX   = "12345678-1234-1234-1234-1234567890ac";
+        const C_TX   = "12345678-1234-1234-1234-1234567890ad";
 
         async function kapcsolodas() {
             try {
@@ -59,40 +58,37 @@
                 });
                 const server = await device.gatt.connect();
                 const service = await server.getPrimaryService(S_UUID);
-                
-                // Kapcsolat a két csatornával
                 writeChar = await service.getCharacteristic(C_RX);
                 notifyChar = await service.getCharacteristic(C_TX);
-                
-                // Feliratkozás az adatokra
                 await notifyChar.startNotifications();
                 notifyChar.addEventListener('characteristicvaluechanged', (event) => {
                     const data = new TextDecoder().decode(event.target.value);
-                    console.log("Érkezett:", data);
                     if (data.startsWith("CREDIT_IS:")) {
                         document.getElementById('kreditEredmeny').value = data.split(":")[1];
                     }
                 });
-
                 document.getElementById('csatBtn').style.display = 'none';
                 document.getElementById('vezerlok').style.display = 'block';
             } catch (e) { alert("Hiba: " + e); }
         }
 
-        // Parancsok küldése az RX csatornára
         async function kuldes(cmd) { if(writeChar) await writeChar.writeValue(new TextEncoder().encode(cmd)); }
         
-        // Kredit lekérdezés: GET_CREDIT:sorszám
         async function lekerdezes() {
             const s = document.getElementById('sorszamInput').value;
             if(s) await kuldes('GET_CREDIT:' + s);
         }
 
-        // Mentés: SET_CREDIT:sorszám:kredit
         async function kreditMentese() {
             const s = document.getElementById('sorszamInput').value;
             const k = document.getElementById('kreditInput').value;
-            if (s && k) await kuldes('SET_CREDIT:' + s + ':' + k);
+            if (s && k) {
+                await kuldes('SET_CREDIT:' + s + ':' + k);
+                // Itt törlődnek ki a mezők küldés után:
+                document.getElementById('sorszamInput').value = '';
+                document.getElementById('kreditInput').value = '';
+                document.getElementById('kreditEredmeny').value = '';
+            }
         }
     </script>
 </body>
